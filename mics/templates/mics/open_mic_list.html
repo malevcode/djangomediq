@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>NYC Open Mics</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; background: #fafbfc; }
+        .mic-list-container { max-width: 1200px; margin: 0 auto; padding: 2em 1em; }
+        h1 { color: #222; margin-bottom: 1.5em; }
+        .top-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5em;
+        }
+        .toggle-group {
+            display: flex;
+            gap: 0.5em;
+        }
+        .toggle-btn {
+            background: #fff;
+            border: 1.5px solid #d1d5db;
+            border-radius: 8px 8px 0 0;
+            padding: 0.7em 2em;
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #222;
+            cursor: pointer;
+            transition: background 0.2s, color 0.2s;
+        }
+        .toggle-btn.active {
+            background: #f3f4f6;
+            color: #22c55e;
+            border-bottom: 2.5px solid #22c55e;
+        }
+        .sub-toggle-group {
+            display: flex;
+            gap: 0.5em;
+            margin-bottom: 1.5em;
+        }
+        .sub-toggle-btn {
+            background: #fff;
+            border: 1.5px solid #d1d5db;
+            border-radius: 8px;
+            padding: 0.5em 1.5em;
+            font-size: 1em;
+            font-weight: 500;
+            color: #222;
+            cursor: pointer;
+            transition: background 0.2s, color 0.2s;
+        }
+        .sub-toggle-btn.active {
+            background: #e0fce7;
+            color: #15803d;
+            border: 1.5px solid #22c55e;
+        }
+        .list-controls {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1em;
+        }
+        .filters-btn {
+            background: #fff;
+            border: 1.5px solid #d1d5db;
+            border-radius: 8px;
+            padding: 0.5em 1.5em;
+            font-size: 1em;
+            font-weight: 500;
+            color: #222;
+            cursor: pointer;
+            margin-right: 1em;
+        }
+        .add-mic-btn {
+            background: #222;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 0.7em 1.7em;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .add-mic-btn:hover { background: #15803d; }
+        .filter-form {
+            background: #fff;
+            border-radius: 8px;
+            padding: 1em 2em 1em 2em;
+            margin-bottom: 2em;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1em 2em;
+            align-items: flex-end;
+        }
+        .filter-form.hide { display: none; }
+        .filter-form label { font-weight: 500; margin-bottom: 0.2em; display: block; }
+        .filter-form input, .filter-form select {
+            padding: 0.4em 0.7em;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            font-size: 1em;
+            width: 180px;
+        }
+        .filter-form button {
+            padding: 0.5em 1.2em;
+            border-radius: 5px;
+            border: none;
+            background: #22c55e;
+            color: #fff;
+            font-weight: 600;
+            font-size: 1em;
+            cursor: pointer;
+        }
+        .event-list { margin-bottom: 2em; }
+        .event-card {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            padding: 1.5em 2em;
+            margin-bottom: 1.5em;
+            border-left: 6px solid #ccc;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            transition: box-shadow 0.2s;
+        }
+        .event-card.verified { border-left-color: #22c55e; }
+        .event-card.verified-tediously { border-left-color: #eab308; }
+        .event-card.unverified { border-left-color: #a3a3a3; }
+        .event-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.5em;
+        }
+        .venue { font-size: 1.25em; font-weight: 600; color: #222; }
+        .status-badge {
+            font-size: 0.95em;
+            font-weight: 500;
+            padding: 0.25em 0.8em;
+            border-radius: 999px;
+            margin-left: 1em;
+            display: inline-block;
+        }
+        .status-badge.verified { background: #dcfce7; color: #15803d; border: 1px solid #22c55e; }
+        .status-badge.verified-tediously { background: #fef9c3; color: #a16207; border: 1px solid #eab308; }
+        .status-badge.unverified { background: #f3f4f6; color: #52525b; border: 1px solid #a3a3a3; }
+        .date-time, .address { color: #666; font-size: 1em; margin-bottom: 0.2em; }
+        .description { color: #444; margin-bottom: 0.7em; }
+        .details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 0.5em 2em;
+            font-size: 0.98em;
+            color: #333;
+        }
+        /* Glance view grid */
+        .glance-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            grid-template-rows: repeat(7, 1fr);
+            gap: 1em;
+            margin-bottom: 2em;
+        }
+        .glance-tile {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            padding: 1em 1.2em;
+            margin-bottom: 1em;
+            border: 3px solid #ccc;
+            border-left-width: 8px;
+            border-left-color: #ccc;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            min-width: 0;
+            transition: border-color 0.2s, border-left-color 0.2s;
+        }
+        .glance-tile.verified { border-left-color: #22c55e; }
+        .glance-tile.verified-tediously { border-left-color: #eab308; }
+        .glance-tile.unverified { border-left-color: #ef4444; }
+        .glance-tile .mic-name {
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #222;
+            margin-bottom: 0.2em;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            width: 100%;
+        }
+        .glance-tile .mic-neighborhood {
+            font-size: 0.98em;
+            color: #666;
+            margin-bottom: 0.1em;
+        }
+        .glance-tile .mic-time {
+            font-size: 0.98em;
+            color: #22c55e;
+            font-weight: 500;
+        }
+        /* Pagination */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 0.5em;
+            margin-bottom: 2em;
+        }
+        .pagination-btn {
+            background: #fff;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            padding: 0.4em 1em;
+            font-size: 1em;
+            color: #222;
+            cursor: pointer;
+        }
+        .pagination-btn.active, .pagination-btn:focus {
+            background: #22c55e;
+            color: #fff;
+            border: 1px solid #22c55e;
+        }
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .glance-grid { grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(7, 1fr); }
+        }
+        @media (max-width: 900px) {
+            .glance-grid { grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(7, 1fr); }
+        }
+        @media (max-width: 600px) {
+            .mic-list-container { padding: 1em 0.2em; }
+            .event-card { padding: 1em; }
+            .details { grid-template-columns: 1fr; }
+            .filter-form { flex-direction: column; gap: 0.7em; padding: 1em; }
+            .filter-form input, .filter-form select { width: 100%; }
+            .glance-grid { grid-template-columns: 1fr; grid-template-rows: repeat(7, 1fr); }
+        }
+    </style>
+    <script>
+        function toggleFilters() {
+            var form = document.getElementById('filterForm');
+            form.classList.toggle('hide');
+        }
+        function setView(view) {
+            document.getElementById('viewInput').value = view;
+            document.getElementById('mainForm').submit();
+        }
+        function setListType(type) {
+            document.getElementById('listTypeInput').value = type;
+            document.getElementById('mainForm').submit();
+        }
+    </script>
+</head>
+<body>
+    <div class="mic-list-container">
+        <div class="top-bar">
+            <h1>NYC Open Mics</h1>
+            <button class="add-mic-btn" type="button" onclick="document.getElementById('addMicModal').style.display='block'">+ List a Mic</button>
+        </div>
+        <form id="mainForm" method="get" style="margin-bottom:0;">
+            <input type="hidden" name="view" id="viewInput" value="{{ request.GET.view|default:'list' }}">
+            <input type="hidden" name="list_type" id="listTypeInput" value="{{ request.GET.list_type|default:'detailed' }}">
+            <div class="toggle-group">
+                <button type="button" class="toggle-btn {% if request.GET.view == 'list' or not request.GET.view %}active{% endif %}" onclick="setView('list')">List</button>
+                <button type="button" class="toggle-btn {% if request.GET.view == 'map' %}active{% endif %}" onclick="setView('map')">Map</button>
+            </div>
+            {% if request.GET.view == 'list' or not request.GET.view %}
+            <div class="sub-toggle-group">
+                <button type="button" class="sub-toggle-btn {% if request.GET.list_type == 'detailed' or not request.GET.list_type %}active{% endif %}" onclick="setListType('detailed')">Detailed View</button>
+                <button type="button" class="sub-toggle-btn {% if request.GET.list_type == 'glance' %}active{% endif %}" onclick="setListType('glance')">Glance View</button>
+            </div>
+            {% endif %}
+            <div class="list-controls">
+                <button type="button" class="filters-btn" onclick="toggleFilters()">Filters</button>
+            </div>
+            <div id="filterForm" class="filter-form hide">
+                <div>
+                    <label for="search">General Search</label>
+                    <input type="text" id="search" name="search" value="{{ search|default:'' }}" placeholder="Search all info...">
+                </div>
+                <div>
+                    <label for="mic_name">Mic Name</label>
+                    <input type="text" id="mic_name" name="mic_name" value="{{ mic_name|default:'' }}" placeholder="Mic name">
+                </div>
+                <div>
+                    <label for="venue_name">Venue Name</label>
+                    <input type="text" id="venue_name" name="venue_name" value="{{ venue_name|default:'' }}" placeholder="Venue name">
+                </div>
+                <div>
+                    <label for="neighborhood">Neighborhood</label>
+                    <input type="text" id="neighborhood" name="neighborhood" value="{{ neighborhood|default:'' }}" placeholder="Neighborhood">
+                </div>
+                <div>
+                    <label for="weekday">Weekday</label>
+                    <select id="weekday" name="weekday">
+                        <option value="">Any</option>
+                        {% for day in weekdays %}
+                            <option value="{{ day }}" {% if weekday == day %}selected{% endif %}>{{ day }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label for="borough">Borough</label>
+                    <select id="borough" name="borough">
+                        <option value="">Any</option>
+                        {% for b in boroughs %}
+                            <option value="{{ b }}" {% if borough == b %}selected{% endif %}>{{ b }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label for="cost">Cost</label>
+                    <select id="cost" name="cost">
+                        <option value="">Any</option>
+                        <option value="free" {% if cost == 'free' %}selected{% endif %}>Free</option>
+                        <option value="paid" {% if cost == 'paid' %}selected{% endif %}>Paid</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="verification_status">Verification</label>
+                    <select id="verification_status" name="verification_status">
+                        <option value="">Any</option>
+                        <option value="verified" {% if verification_status == 'verified' %}selected{% endif %}>Verified</option>
+                        <option value="verified tediously" {% if verification_status == 'verified tediously' %}selected{% endif %}>Verified Tediously</option>
+                        <option value="unverified" {% if verification_status == 'unverified' %}selected{% endif %}>Unverified</option>
+                    </select>
+                </div>
+                <div>
+                    <button type="submit">Search/Filter</button>
+                </div>
+            </div>
+        </form>
+        {% if request.GET.view == 'map' %}
+            <div id="mapContainer" style="height: 500px; border-radius: 12px; margin-bottom: 2em;"></div>
+        {% elif request.GET.list_type == 'glance' %}
+            <div class="glance-grid">
+                {% for event in events|slice:':49' %}
+                    <div class="glance-tile {% if event.verification_status == 'verified' %}verified{% elif event.verification_status == 'verified tediously' %}verified-tediously{% else %}unverified{% endif %}" onclick="toggleGlanceExpand(this)">
+                        <div class="mic-name">{{ event.name }}</div>
+                        <div class="mic-neighborhood" data-borough="{{ event.borough }}">{{ event.neighborhood }}</div>
+                        <div class="mic-time">{{ event.time|default:event.start_time|default:'TBD' }}</div>
+                        <div class="glance-extra-details" style="display:none;">
+                            <div><strong>Stage Time:</strong> {{ event.stage_time }}</div>
+                            <div><strong>Cost:</strong> {{ event.cost }}</div>
+                            <div><strong>Venue Type:</strong> {{ event.venue_type }}</div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+            <script>
+            function toggleGlanceExpand(tile) {
+                var extra = tile.querySelector('.glance-extra-details');
+                if (extra) extra.style.display = extra.style.display === 'none' ? 'block' : 'none';
+            }
+            </script>
+        {% else %}
+            <div class="event-list">
+                {% for event in events|slice:':5' %}
+                <div class="event-card {% if event.verification_status == 'verified' %}verified{% elif event.verification_status == 'verified tediously' %}verified-tediously{% else %}unverified{% endif %}">
+                    <div class="event-header">
+                        <span class="venue">{{ event.name }}</span>
+                        <span class="status-badge {% if event.verification_status == 'verified' %}verified{% elif event.verification_status == 'verified tediously' %}verified-tediously{% else %}unverified{% endif %}">
+                            {% if event.verification_status == 'verified' %}Verified{% elif event.verification_status == 'verified tediously' %}Verified Tediously{% else %}Unverified{% endif %}
+                        </span>
+                    </div>
+                    {% if event.address %}<div class="address">{{ event.address }}</div>{% endif %}
+                    <div class="details">
+                        <div><strong>Day:</strong> {{ event.day }}</div>
+                        <div><strong>Start Time:</strong> {{ event.start_time }}</div>
+                        <div><strong>Latest End Time:</strong> {{ event.latest_end_time }}</div>
+                        <div><strong>Borough:</strong> {{ event.borough }}</div>
+                        <div><strong>Neighborhood:</strong> {{ event.neighborhood }}</div>
+                        <div><strong>Venue Type:</strong> {{ event.venue_type }}</div>
+                        <div><strong>Cost:</strong> {{ event.cost }}</div>
+                        <div><strong>Stage Time:</strong> {{ event.stage_time }}</div>
+                        <div><strong>Sign-Up Instructions:</strong> {{ event.signup_instructions }}</div>
+                        <div><strong>Host(s) / Organizer:</strong> {{ event.hosts }}</div>
+                        <div><strong>Changes/Updates:</strong> {{ event.changes_updates }}</div>
+                        <div><strong>Last Verified:</strong> {{ event.last_verified }}</div>
+                        <div><strong>Other Rules:</strong> {{ event.other_rules }}</div>
+                    </div>
+                    <div class="event-interactions" style="margin-top:1em;">
+                        <button onclick="event.preventDefault(); thumbsUp({{ event.id }});" style="background:#22c55e; color:#fff; border:none; border-radius:4px; padding:0.3em 1em; margin-right:0.5em;">👍</button>
+                        <button onclick="event.preventDefault(); thumbsDown({{ event.id }});" style="background:#ef4444; color:#fff; border:none; border-radius:4px; padding:0.3em 1em;">👎</button>
+                        <form onsubmit="event.preventDefault(); submitPrivateReview({{ event.id }}, this);" style="display:inline-block; margin-left:1em;">
+                            <input type="text" name="private_review" placeholder="Private review (jokes, notes)" style="width:200px;">
+                            <button type="submit" style="background:#222; color:#fff; border:none; border-radius:4px; padding:0.3em 1em;">Save</button>
+                        </form>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+    <div id="addMicModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.3); z-index:1000; align-items:center; justify-content:center;">
+        <div style="background:#fff; border-radius:12px; max-width:500px; width:95vw; max-height:90vh; overflow-y:auto; margin:auto; padding:2em; position:relative; box-sizing:border-box;">
+            <button style="position:absolute; top:1em; right:1em; background:none; border:none; font-size:1.5em; cursor:pointer;" onclick="document.getElementById('addMicModal').style.display='none'">&times;</button>
+            <h2 style="margin-bottom:1em;">List a New Mic</h2>
+            <form id="addMicForm" method="post" action="/add-mic/">
+                <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                <div style="margin-bottom:1em;"><label>Name:<br><input name="name" required style="width:100%"></label></div>
+                <div style="margin-bottom:1em;"><label>Venue:<br><input name="venue" required style="width:100%"></label></div>
+                <div style="margin-bottom:1em;"><label>Address:<br><input name="address" required style="width:100%"></label></div>
+                <div style="margin-bottom:1em;"><label>Date:<br><input name="date" type="date" style="width:100%"></label></div>
+                <div style="margin-bottom:1em;"><label>Time:<br><input name="time" type="time" style="width:100%"></label></div>
+                <div style="margin-bottom:1em;"><label>Description:<br><textarea name="description" style="width:100%"></textarea></label></div>
+                <div style="margin-bottom:1em;"><label>Day:<br><input name="day" style="width:100%"></label></div>
+                <div style="margin-bottom:1em;"><label>Start Time:<br><input name="start_time" style="width:100%"></label></div>
+                <div style="margin-bottom:1em;"><label>Latest End Time:<br><input name="latest_end_time" style="width:100%"></label></div>
+                <div style="margin-bottom:1em;"><label>Borough:<br><input name="borough" style="width:100%"></label></div>
+                <div style="margin-bottom:1em;"><label>Neighborhood:<br><input name="neighborhood" style="width:100%"></label></div>
+                <div style="margin-bottom:1em;"><label>Venue Type:<br><input name="venue_type" style="width:100%"></label></div>
+                <div style="margin-bottom:1em;"><label>Cost:<br><input name="cost" style="width:100%"></label></div>
+                <div style="margin-bottom:1em;"><label>Stage Time:<br><input name="stage_time" style="width:100%"></label></div>
+                <div style="margin-bottom:1em;"><label>Sign-Up Instructions:<br><input name="signup_instructions" style="width:100%"></label></div>
+                <div style="margin-bottom:1em;"><label>Host(s) / Organizer:<br><input name="hosts" style="width:100%"></label></div>
+                <div style="margin-bottom:1em;"><label>Changes/Updates:<br><input name="changes_updates" style="width:100%"></label></div>
+                <div style="margin-bottom:1em;"><label>Last Verified:<br><input name="last_verified" style="width:100%"></label></div>
+                <div style="margin-bottom:1em;"><label>Other Rules:<br><input name="other_rules" style="width:100%"></label></div>
+                <div style="margin-bottom:1em;"><label>SMS (not public but essential for verification status):<br><input name="sms" style="width:100%"></label></div>
+                <button type="submit" style="background:#22c55e; color:#fff; border:none; border-radius:6px; padding:0.7em 2em; font-size:1.1em; font-weight:600; cursor:pointer;">Submit</button>
+                <div id="addMicMsg" style="margin-top:1em;"></div>
+            </form>
+        </div>
+    </div>
+    <script>
+        document.getElementById('addMicForm')?.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const form = e.target;
+            const data = new FormData(form);
+            const msg = document.getElementById('addMicMsg');
+            msg.textContent = '';
+            try {
+                const resp = await fetch(form.action, {method:'POST', body:data, headers:{'X-Requested-With':'XMLHttpRequest'}});
+                const result = await resp.json();
+                if(result.success) {
+                    msg.textContent = 'Mic submitted!';
+                    msg.style.color = '#22c55e';
+                    setTimeout(()=>{ location.reload(); }, 1200);
+                } else {
+                    msg.textContent = result.error || 'Error submitting mic.';
+                    msg.style.color = 'red';
+                }
+            } catch(err) {
+                msg.textContent = 'Error submitting mic.';
+                msg.style.color = 'red';
+            }
+        });
+    </script>
+    <script src="https://api.mapbox.com/mapbox-gl-js/v3.2.0/mapbox-gl.js"></script>
+    <link href="https://api.mapbox.com/mapbox-gl-js/v3.2.0/mapbox-gl.css" rel="stylesheet" />
+    <script>
+    function showMapView() {
+        if (window.mapboxMapLoaded) return;
+        mapboxgl.accessToken = 'pk.eyJ1IjoibWFwYm94IiwiYSI6ImNrbmZ2b2Z2ZzA2b3gycG1uN3F2b2Z3b2gifQ.2v6QwQwQwQwQwQwQwQwQwQ'; // Replace with your token
+        const map = new mapboxgl.Map({
+            container: 'mapContainer',
+            style: 'https://api.mapbox.com/styles/v1/mapbox/standard?lightPreset=dusk',
+            center: [-73.9851, 40.7580],
+            zoom: 11
+        });
+        window.mapboxMapLoaded = true;
+    }
+    document.addEventListener('DOMContentLoaded', function() {
+        if (document.getElementById('mapContainer')) {
+            showMapView();
+        }
+    });
+    </script>
+    <script>
+    // Add color filter for neighborhoods by borough
+    function neighborhood_color(borough) {
+        switch ((borough||'').toLowerCase()) {
+            case 'manhattan': return '#2563eb'; // blue
+            case 'brooklyn': return '#ea580c'; // orange
+            case 'queens': return '#a21caf'; // purple
+            case 'bronx': return '#16a34a'; // green
+            case 'staten island': return '#64748b'; // gray
+            default: return '#666';
+        }
+    }
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.mic-neighborhood').forEach(function(el) {
+            el.style.color = neighborhood_color(el.getAttribute('data-borough'));
+        });
+    });
+    // Add thumbs up/down and private review handlers (dummy, backend needed)
+    function thumbsUp(id) { alert('Thumbs up for mic ' + id); }
+    function thumbsDown(id) { alert('Thumbs down for mic ' + id); }
+    function submitPrivateReview(id, form) { alert('Private review for mic ' + id + ': ' + form.private_review.value); }
+    </script>
+</body>
+</html> 
